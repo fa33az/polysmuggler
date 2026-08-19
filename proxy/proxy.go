@@ -23,6 +23,7 @@ type Config struct {
 	StaticTarget string // If set, acts as reverse proxy forwarding to this target
 	Strategy     mutator.Strategy
 	Verbose      bool
+	ForceH2      bool // Force HTTP/2 protocol forwarding to the target
 }
 
 type Proxy struct {
@@ -123,9 +124,13 @@ func (p *Proxy) handleConnection(clientConn net.Conn) {
 	// Dial remote server
 	var targetConn net.Conn
 	if targetURL.Scheme == "https" {
-		targetConn, err = tls.Dial("tcp", host, &tls.Config{
+		tlsConfig := &tls.Config{
 			InsecureSkipVerify: true,
-		})
+		}
+		if p.cfg.ForceH2 {
+			tlsConfig.NextProtos = []string{"h2"}
+		}
+		targetConn, err = tls.Dial("tcp", host, tlsConfig)
 	} else {
 		targetConn, err = net.Dial("tcp", host)
 	}
@@ -141,6 +146,30 @@ func (p *Proxy) handleConnection(clientConn net.Conn) {
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Printf("[-] Error reading request body: %v", err)
+		return
+	}
+
+	// Handle HTTP/2 protocol forwarding path
+	if p.cfg.ForceH2 {
+		statusCode, respBody, respHeaders, err := ForwardH2Request(targetConn, targetConn, req, bodyBytes, targetURL, p.mutator)
+		if err != nil {
+			log.Printf("[-] Error forwarding HTTP/2 request: %v", err)
+			sendErrorResponse(clientConn, 502, "Bad Gateway", fmt.Sprintf("HTTP/2 forward error: %v", err))
+			return
+		}
+
+		// Write HTTP/1.1 response back to local client
+		p.recordFeedback(req.Method, targetURL.Path, statusCode)
+
+		fmt.Fprintf(clientConn, "HTTP/1.1 %d OK\r\n", statusCode)
+		for k, v := range respHeaders {
+			if strings.HasPrefix(k, ":") {
+				continue
+			}
+			fmt.Fprintf(clientConn, "%s: %s\r\n", k, v)
+		}
+		fmt.Fprintf(clientConn, "Content-Length: %d\r\n\r\n", len(respBody))
+		clientConn.Write(respBody)
 		return
 	}
 

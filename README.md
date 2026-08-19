@@ -23,6 +23,7 @@ Polysmuggler is a local polymorphic HTTP mutation proxy designed for auditing We
   - Casing mutations (`ChUnKeD`).
   - Multi-value injection (`chunked, chunked`).
 * **`HTTP Smuggling Optimization`**: Supports customizable header ordering templates to analyze CL.TE and TE.CL vulnerabilities.
+* **`HTTP/2 Pseudo-Header Smuggling`**: Translates HTTP/1.1 client requests into raw HTTP/2 frames, supporting case-mutation on pseudo-headers (e.g., `:Method` or `:Path`) to test backend parser differences.
 * **`Delay-Based Chunking`**: Introduces a configurable delay between chunk deliveries to test stream-based inspection limits.
 * **`Unicode Homoglyph Translation`**: Swaps query parameters with Unicode homoglyph equivalents to analyze regex normalization boundaries.
 * **`Dual Mode Operation`**: Supports standard HTTP proxy forwarding and Reverse Proxy targeting for direct host evaluation.
@@ -71,4 +72,5 @@ curl -i -X POST http://127.0.0.1:8080/api/endpoint -d "data=test"
 | `-clte` | `bool` | `false` | Enable Content-Length / Transfer-Encoding (CL.TE) smuggling |
 | `-tecl` | `bool` | `false` | Enable Transfer-Encoding / Content-Length (TE.CL) smuggling |
 | `-delay` | `int` | `0` | Delay in milliseconds between chunk delivery |
+| `-h2` | `bool` | `false` | Force HTTP/2 protocol forwarding to target web server |
 | `-v` | `bool` | `false` | Enable verbose output logging |

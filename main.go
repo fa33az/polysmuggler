@@ -19,6 +19,7 @@ func main() {
 	smuggleTECL := flag.Bool("tecl", false, "Enable Transfer-Encoding / Content-Length (TE.CL) smuggling header order")
 	delayChunks := flag.Int("delay", 0, "Delay in milliseconds between chunk delivery (0 for none)")
 	verbose := flag.Bool("v", false, "Enable verbose output logging")
+	forceH2 := flag.Bool("h2", false, "Force HTTP/2 protocol forwarding to target web server")
 
 	flag.Parse()
 
@@ -38,13 +39,14 @@ func main() {
 		StaticTarget: *target,
 		Strategy:     strat,
 		Verbose:      *verbose,
+		ForceH2:      *forceH2,
 	}
 
 	p := proxy.NewProxy(cfg)
 
 	log.Printf("[*] Polysmuggler initialized successfully.")
-	log.Printf("[*] Active Strategies: CaseRandomization=%t, ChunkObfuscation=%t, UnicodeHomoglyphs=%t, CL.TE=%t, TE.CL=%t",
-		strat.HeaderCase, strat.ChunkedObfuscate, strat.UnicodeHomoglyph, strat.SmuggleCLTE, strat.SmuggleTECL)
+	log.Printf("[*] Active Strategies: CaseRandomization=%t, ChunkObfuscation=%t, UnicodeHomoglyphs=%t, CL.TE=%t, TE.CL=%t, ForceH2=%t",
+		strat.HeaderCase, strat.ChunkedObfuscate, strat.UnicodeHomoglyph, strat.SmuggleCLTE, strat.SmuggleTECL, cfg.ForceH2)
 
 	if err := p.Start(); err != nil {
 		log.Fatalf("[-] Critical error in proxy: %v", err)
