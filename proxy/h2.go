@@ -243,7 +243,11 @@ func ForwardH2Request(w io.Writer, r io.Reader, req *http.Request, body []byte, 
 		case 0x3: // RST_STREAM
 			return 0, nil, nil, fmt.Errorf("stream reset by target: stream_id=%d error_code=%d", frame.StreamID, binaryBigEndian(frame.Payload))
 		case 0x7: // GOAWAY
-			return 0, nil, nil, fmt.Errorf("goaway received from target: error_code=%d", binaryBigEndian(frame.Payload[4:8]))
+			var errCode uint32
+			if len(frame.Payload) >= 8 {
+				errCode = binaryBigEndian(frame.Payload[4:8])
+			}
+			return 0, nil, nil, fmt.Errorf("goaway received from target: error_code=%d", errCode)
 		}
 	}
 
