@@ -1,4 +1,4 @@
-# 🚀 Polysmuggler
+# Polysmuggler
 
 [![Go Version](https://img.shields.io/github/go-mod/go-version/fa33az/polysmuggler?color=00ADD8)](https://golang.org)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
@@ -8,20 +8,20 @@ Polysmuggler is a local polymorphic HTTP mutation proxy designed for auditing We
 
 ---
 
-## 🛡️ Disclaimer & Legal Warning
+## Disclaimer & Legal Warning
 
 > [!WARNING]
 > **This software is designed solely for authorized security audits, penetration testing, and defensive engineering evaluation. Running this tool against target infrastructures without explicit, written authorization from the system owners is illegal. The creator and contributors assume no liability for misuse, damages, or legal actions resulting from the use of this software. By cloning or utilizing this repository, you agree to use it in strict accordance with local laws and security assessment ethics.**
 
 ---
 
-## 📦 Key Capabilities
+## Key Capabilities
 
 * **`Dynamic Header Case Mutation`**: Randomizes the casing of HTTP header keys (e.g., `Content-Type` $\to$ `cONteNt-TyPe`) to evaluate how parser normalization affects WAF rules.
 * **`Obfuscated Chunked Delivery`**: Structures request bodies using customized `Transfer-Encoding: chunked` headers with strategies including:
-  * Spacing and tab obfuscation (e.g., `Transfer-Encoding: \tchunked`).
-  * Casing mutations (`ChUnKeD`).
-  * Multi-value injection (`chunked, chunked`).
+  - Spacing and tab obfuscation (e.g., `Transfer-Encoding: \tchunked`).
+  - Casing mutations (`ChUnKeD`).
+  - Multi-value injection (`chunked, chunked`).
 * **`HTTP Smuggling Optimization`**: Supports customizable header ordering templates to analyze CL.TE and TE.CL vulnerabilities.
 * **`Delay-Based Chunking`**: Introduces a configurable delay between chunk deliveries to test stream-based inspection limits.
 * **`Unicode Homoglyph Translation`**: Swaps query parameters with Unicode homoglyph equivalents to analyze regex normalization boundaries.
@@ -29,7 +29,7 @@ Polysmuggler is a local polymorphic HTTP mutation proxy designed for auditing We
 
 ---
 
-## 💻 Installation
+## Installation
 
 Ensure Go is installed (version 1.20+ recommended), then compile locally:
 
@@ -46,7 +46,7 @@ go build -o polysmuggler main.go
 
 ---
 
-## ⚙️ Usage Guide
+## Usage Guide
 
 ### 1. Reverse Proxy Mode (Recommended for Target Auditing)
 Start Polysmuggler locally, forwarding mutated traffic to your authorized target:
