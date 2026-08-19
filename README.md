@@ -15,18 +15,69 @@ Polysmuggler is a local polymorphic HTTP mutation proxy designed for auditing We
 
 ---
 
+## Architecture Flow
+
+```
+[Security Scanner] (sqlmap / curl)
+       |
+       | Standard HTTP/1.1 Request
+       v
+[Polysmuggler Proxy] (127.0.0.1:8080)
+       |
+       | Intercepts, applies dynamic mutations,
+       | and serializes raw HTTP/1.1 or HTTP/2 frames
+       v
+   [WAF / CDN] (Fails to match signatures / normalize correctly)
+       |
+       | Forwards request
+       v
+[Backend Server] (Normalizes & executes query successfully)
+```
+
+---
+
 ## Key Capabilities
 
-* **`Dynamic Header Case Mutation`**: Randomizes the casing of HTTP header keys (e.g., `Content-Type` $\to$ `cONteNt-TyPe`) to evaluate how parser normalization affects WAF rules.
-* **`Obfuscated Chunked Delivery`**: Structures request bodies using customized `Transfer-Encoding: chunked` headers with strategies including:
+* **Dynamic Header Case Mutation**: Randomizes the casing of HTTP header keys (e.g., `Content-Type` -> `cONteNt-TyPe`) to evaluate how parser normalization affects WAF rules.
+* **Obfuscated Chunked Delivery**: Structures request bodies using customized `Transfer-Encoding: chunked` headers with strategies including:
   - Spacing and tab obfuscation (e.g., `Transfer-Encoding: \tchunked`).
   - Casing mutations (`ChUnKeD`).
   - Multi-value injection (`chunked, chunked`).
-* **`HTTP Smuggling Optimization`**: Supports customizable header ordering templates to analyze CL.TE and TE.CL vulnerabilities.
-* **`HTTP/2 Pseudo-Header Smuggling`**: Translates HTTP/1.1 client requests into raw HTTP/2 frames, supporting case-mutation on pseudo-headers (e.g., `:Method` or `:Path`) to test backend parser differences.
-* **`Delay-Based Chunking`**: Introduces a configurable delay between chunk deliveries to test stream-based inspection limits.
-* **`Unicode Homoglyph Translation`**: Swaps query parameters with Unicode homoglyph equivalents to analyze regex normalization boundaries.
-* **`Dual Mode Operation`**: Supports standard HTTP proxy forwarding and Reverse Proxy targeting for direct host evaluation.
+* **HTTP Smuggling Optimization**: Supports customizable header ordering templates to analyze CL.TE and TE.CL vulnerabilities.
+* **HTTP/2 Pseudo-Header Smuggling**: Translates HTTP/1.1 client requests into raw HTTP/2 frames, supporting case-mutation on pseudo-headers (e.g., `:Method` or `:Path`) to test backend parser differences.
+* **Delay-Based Chunking**: Introduces a configurable delay between chunk deliveries to test stream-based inspection limits.
+* **Unicode Homoglyph Translation**: Swaps query parameters with Unicode homoglyph equivalents to analyze regex normalization boundaries.
+* **Dual Mode Operation**: Supports standard HTTP proxy forwarding and Reverse Proxy targeting for direct host evaluation.
+
+---
+
+## Request Mutation Comparison
+
+### Before (Standard Client HTTP/1.1 Request)
+```http
+POST /api/v1/users?id=1337 HTTP/1.1
+Host: target.com
+User-Agent: curl/7.81.0
+Content-Type: application/json
+Content-Length: 15
+
+{"admin":true}
+```
+
+### After (Polysmuggler Mutated HTTP/1.1 Outflow)
+```http
+POST /api/v1/users?id=1337 HTTP/1.1
+uSEr-aGeNt: curl/7.81.0
+cOnTeNt-tYpE: application/json
+Host: target.com
+Transfer-Encoding: 	chunked
+
+f
+{"admin":true}
+0
+
+
+```
 
 ---
 
@@ -60,7 +111,25 @@ Route your scanner or development tool through the proxy listener:
 curl -i -X POST http://127.0.0.1:8080/api/endpoint -d "data=test"
 ```
 
-### 2. Command Line Arguments Reference
+### 2. Scanner Integration Presets
+
+#### SQLMap
+To route sqlmap audit payloads through Polysmuggler:
+```bash
+sqlmap -u "http://127.0.0.1:8080/index.php?id=1" --batch --dbms=mysql
+```
+
+#### Burp Suite Upstream Proxy Config
+1. Go to **Settings** -> **Network** -> **Connections**.
+2. Scroll to the **Upstream proxy servers** section.
+3. Add a rule:
+   - **Destination host:** `your-authorized-target.com`
+   - **Proxy host:** `127.0.0.1`
+   - **Proxy port:** `8080`
+
+---
+
+## Command Line Arguments Reference
 
 | Argument | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
